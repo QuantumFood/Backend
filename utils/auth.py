@@ -1,5 +1,4 @@
 import requests
-import json
 import os 
 from dotenv import load_dotenv
 
@@ -25,13 +24,14 @@ def get_user_token(username, password):
     }
     try:
         response = requests.post(f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token", data=data)
-        return response.json()['access_token']
+        return response.json()
     except Exception as e:
         return {"message": str(e)}        
 
 def create_user(user):
+    admin_token = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)
     headers = {
-        'Authorization': f'Bearer {get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)}',
+        'Authorization': f'Bearer {admin_token["access_token"]}',
         'Content-Type': 'application/json',
     }
     try:
