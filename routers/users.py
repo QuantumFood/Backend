@@ -16,9 +16,12 @@ router = APIRouter(
 async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db)):
     if auth.user_exists_in_keycloak(user.username):
         raise HTTPException(status_code=409, detail="User already exists")
-    keycloack_user = register_keycloak_user(user)
-    register_db_user(user, db)
-    return keycloack_user
+    try:
+        register_db_user(user, db)
+        keycloack_user = register_keycloak_user(user)
+        return keycloack_user
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Try again in a minute,Server down")
 
 
 # user login
