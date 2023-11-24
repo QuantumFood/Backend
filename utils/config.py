@@ -1,11 +1,4 @@
 from passlib.context import CryptContext
-import os
-from dotenv import load_dotenv
-
-
-load_dotenv()
-
-
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
