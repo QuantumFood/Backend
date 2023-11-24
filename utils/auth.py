@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import requests
 import os
 from dotenv import load_dotenv
@@ -20,12 +21,14 @@ def get_user_token(username, password):
         'username': username,
         'password': password,
     }
-    try:
-        response = requests.post(
-            f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token", data=data)
-        return response.json()
-    except Exception as e:
-        return {"message": str(e)}
+    response = requests.post(
+        f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token", data=data)
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    return response.json()
+   
 
 
 def get_user_id(username):
@@ -37,8 +40,9 @@ def get_user_id(username):
     }
     response = requests.get(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
-    if response.json():
-        return response.json()[0]['id']
+    user_data = response.json()
+    if user_data:
+        return user_data[0]['id']
     else:
         return None
 
