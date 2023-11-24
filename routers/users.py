@@ -17,7 +17,6 @@ async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db
     try:
         register_db_user(user, db)
     except Exception as e:
-        print(str(e))
         raise HTTPException(status_code=409, detail="User already exists")
 
     keycloack_user = register_keycloak_user(user)
