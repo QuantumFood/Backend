@@ -8,7 +8,7 @@ Base = db.Base
 class Request(Base):
     __tablename__ = "requests"
 
-    email = Column(String, ForeignKey('users.email'), primary_key=True)
+    username = Column(String, ForeignKey('users.username'), primary_key=True)
     food = Column(String)
     created_at = Column(
         DateTime, server_default=sqlalchemy.func.now(), nullable=False)

@@ -1,5 +1,5 @@
 import requests
-import os 
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,8 +12,6 @@ KEYCLOAK_ADMIN = os.getenv("KEYCLOAK_ADMIN_USERNAME")
 KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
 
 
-
-
 def get_user_token(username, password):
     data = {
         'grant_type': 'password',
@@ -23,19 +21,64 @@ def get_user_token(username, password):
         'password': password,
     }
     try:
-        response = requests.post(f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token", data=data)
+        response = requests.post(
+            f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token", data=data)
         return response.json()
     except Exception as e:
-        return {"message": str(e)}        
+        return {"message": str(e)}
+
+
+def get_user_id(username):
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+    }
+    params = {
+        'username': username,
+    }
+    response = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
+    if response.json():
+        return response.json()[0]['id']
+    else:
+        return None
+
+
+admin_token = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)[
+    "access_token"]
+
 
 def create_user(user):
-    admin_token = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)
     headers = {
-        'Authorization': f'Bearer {admin_token["access_token"]}',
+        'Authorization': f'Bearer {admin_token}',
         'Content-Type': 'application/json',
     }
     try:
-        response = requests.post(f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, json=user)
+        response = requests.post(
+            f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, json=user)
     except Exception as e:
         return {"message": str(e)}
     return response.status_code
+
+
+def user_exists_in_keycloak(username):
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+    }
+    params = {
+        'username': username,
+    }
+    response = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
+    return len(response.json()) > 0
+
+
+def is_user_logged_in(username):
+    user_id = get_user_id(username)
+    if user_id is None:
+        return False
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+    }
+    response = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/sessions", headers=headers)
+    return len(response.json()) > 0

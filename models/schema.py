@@ -2,7 +2,7 @@ from pydantic import BaseModel,EmailStr
 
 
 class Request(BaseModel):
-    email: str
+    username: str
     food: str
 
 
