@@ -64,7 +64,7 @@ def create_user(user):
     return response.status_code
 
 
-def user_exists_in_keycloak(username):
+def username_exists_in_keycloak(username):
     headers = {
         'Authorization': f'Bearer {admin_token}',
     }
@@ -75,6 +75,20 @@ def user_exists_in_keycloak(username):
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
     return len(response.json()) > 0
 
+def email_exists_in_keycloak(email):
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+    }
+    params = {
+        'email': email,
+    }
+    response = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
+    return len(response.json()) > 0
+
+
+def user_exists_in_keycloak(username, email):
+    return username_exists_in_keycloak(username) or email_exists_in_keycloak(email)
 
 def is_user_logged_in(username):
     user_id = get_user_id(username)
