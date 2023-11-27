@@ -19,8 +19,6 @@ def register_keycloak_user(user: schema.UserCreate):
         "username": user.username,
         "email": user.email,
         "enabled": True,
-        "firstName": user.firstName,
-        "lastName": user.lastName,
         "credentials": [
             {
                 "type": "password",

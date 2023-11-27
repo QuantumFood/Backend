@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey,Boolean
 from sqlalchemy.orm import relationship
 import sqlalchemy
 from database import db
@@ -7,8 +7,9 @@ Base = db.Base
 
 class Request(Base):
     __tablename__ = "requests"
-
-    username = Column(String, ForeignKey('users.username'), primary_key=True)
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     food = Column(String)
     created_at = Column(
         DateTime, server_default=sqlalchemy.func.now(), nullable=False)
@@ -22,6 +23,7 @@ class User(Base):
     username = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
+    is_active = Column(Boolean, default=True)
     created_at = Column(
         DateTime, server_default=sqlalchemy.func.now(), nullable=False)
     requests = relationship("Request", back_populates="user")
