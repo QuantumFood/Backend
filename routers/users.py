@@ -13,6 +13,7 @@ router = APIRouter(
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db)):
+    print(user)
     if auth.user_exists_in_keycloak(user.username,user.email):
         raise HTTPException(status_code=409, detail="User already exists")
     try:
