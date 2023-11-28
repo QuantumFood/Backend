@@ -1,8 +1,9 @@
 from fastapi import HTTPException
-import requests
 from jose import jwt,JWTError
-import os
 from dotenv import load_dotenv
+import requests
+import os
+
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 KEYCLOAK_ADMIN = os.getenv("KEYCLOAK_ADMIN")
+KEYCLOAK_ADMIN_EMAIL = os.getenv("EYCLOAK_ADMIN_EMAIL")
 KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
 PUBLIC_KEY = os.getenv("PUBLIC_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -112,3 +114,18 @@ def is_user_logged_in(username):
     response = requests.get(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/sessions", headers=headers)
     return len(response.json()) > 0
+
+
+def logout_user(token):
+    data = {
+        'refresh_token': token
+    }
+    try:    
+        response =  requests.post(
+            f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/protocol/openid-connect/logout", data = data)
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Error logging out user")
+        return {"message": "User logged out successfully"}
+    except Exception as e:
+        return {"message": str(e)}
+

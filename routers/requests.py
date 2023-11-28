@@ -14,7 +14,6 @@ router = APIRouter(
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 def get_requests(db: Session = Depends(db.get_db)):
-    #requests = db.query(model.Request).all()
     requests = db.query(model.Request).options(joinedload(model.Request.user)).all()
     return requests
 
@@ -55,3 +54,35 @@ async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = He
               status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     request = db.query(model.Request).filter(model.Request.user_id == user.id).all()
     return request
+
+
+@router.put("/", status_code=status.HTTP_200_OK)
+async def update_request(request: schema.Request, db: Session = Depends(db.get_db), token: str = Header(...)):
+    payload  = auth.verify_token(token)
+    if not payload:
+        raise HTTPException(
+              status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")    
+    username = payload.get("preferred_username")
+    user = db.query(model.User).filter(model.User.username == username).first()
+    if not user:
+        raise HTTPException(
+              status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db_request = db.query(model.Request).filter(model.Request.user_id == user.id).first()
+    if not db_request:
+        raise HTTPException(
+              status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+    db_request.food = request.food
+    db.commit()
+    db.refresh(db_request)
+    return {"message": "Request updated successfully","data":{"food":db_request.food}}
+
+
+@router.delete("/", status_code=status.HTTP_200_OK)
+def delete_all_requests(db:Session=Depends(db.get_db), token: str = Header(...)):
+    payload  = auth.verify_token(token)
+    if not payload:
+        raise HTTPException(
+              status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")    
+    db.query(model.Request).delete()
+    db.commit()
+    return {"message": "All requests deleted successfully"}

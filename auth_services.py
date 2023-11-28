@@ -11,12 +11,13 @@ def register_db_user(user: schema.UserCreate, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {"message": "User created successfully", "data": {"username": new_user.username, "email": new_user.email}}
+    return new_user
+
 
 
 def register_keycloak_user(user: schema.UserCreate):
     keycloak_register_data = {
-        "username": user.username,
+        "username": user.username.lower(),
         "email": user.email,
         "enabled": True,
         "credentials": [
@@ -30,7 +31,7 @@ def register_keycloak_user(user: schema.UserCreate):
     try:
         is_registered = auth.create_user(keycloak_register_data)
         if is_registered == 201:
-            return {"message": "User registered successfully", "data": {"username": user.username, "email": user.email}}
+            return {"message": "User registered successfully"}
         return is_registered
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error registering user")
