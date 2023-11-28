@@ -77,7 +77,7 @@ async def update_request(request: schema.Request, db: Session = Depends(db.get_d
     return {"message": "Request updated successfully","data":{"food":db_request.food}}
 
 
-@router.delete("/", status_code=status.HTTP_200_OK)
+@router.delete("/all", status_code=status.HTTP_200_OK)
 def delete_all_requests(db:Session=Depends(db.get_db), token: str = Header(...)):
     payload  = auth.verify_token(token)
     if not payload:
