@@ -1,9 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException, status,Header
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from kafka import KafkaProducer
 from database import db
 from models import model, schema
 from utils import auth
+from testing import comsume_messages
+import json
 
 
 router = APIRouter(
@@ -11,6 +13,10 @@ router = APIRouter(
     tags=["requests"],
 )
 
+
+
+producer = KafkaProducer(bootstrap_servers='localhost:9092',
+                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 def get_requests(db: Session = Depends(db.get_db)):
@@ -38,8 +44,22 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
-    return {"message": "Request created successfully","data":{"food":new_request.food}}
+    
+    message = {
+        "message": "Request created successfully",
+        "data": {
+            "food": new_request.food,
+            "username": user.username,
+            "email": user.email
+        }
+    }
+    print(message)
+    producer.send('user-requests', message.get("data"))
+    producer.flush()
+    #comsume_messages()
 
+    return message
+    
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = Header(...)):
