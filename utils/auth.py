@@ -97,7 +97,6 @@ def email_exists_in_keycloak(email):
     }
     response = requests.get(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users", headers=headers, params=params)
-    print(response.json())
     return len(response.json()) > 0
 
 def user_exists_in_keycloak(username, email):

@@ -17,9 +17,9 @@ async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db
     if auth.user_exists_in_keycloak(user.username,user.email):
         raise HTTPException(status_code=409, detail="User already exists")
     try:
-        keycloack_user = register_keycloak_user(user)
-        register_db_user(user, db)
-        return keycloack_user
+        register_keycloak_user(user)
+        new_user = register_db_user(user, db)
+        return new_user
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error registering user,retry later")
 
