@@ -52,7 +52,6 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
             "email": user.email
         }
     }
-    print(message)
     producer.send('user-requests', message.get("data"))
     producer.flush()
     #comsume_messages()

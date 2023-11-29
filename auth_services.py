@@ -35,3 +35,14 @@ def register_keycloak_user(user: schema.UserCreate):
         return is_registered
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error registering user")
+
+
+def delete_db_user(username, db: Session):
+    user = db.query(model.User).filter(model.User.username == username).first()
+    if user:
+        user_request = db.query(model.Request).filter(model.Request.user_id == user.id).first()
+        if user_request:
+            db.delete(user_request)
+        db.delete(user)
+        db.commit()
+        return {"message": "User deleted successfully"}
