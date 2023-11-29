@@ -23,7 +23,7 @@ def get_requests(db: Session = Depends(db.get_db)):
     return requests
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/food", status_code=status.HTTP_201_CREATED)
 async def create_request(request: schema.Request, db: Session = Depends(db.get_db), token: str = Header(...)):
     payload  = auth.verify_token(token)
     if not payload:
@@ -54,12 +54,11 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
     }
     producer.send('user-requests', message.get("data"))
     producer.flush()
-    #comsume_messages()
 
     return message
     
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/food", status_code=status.HTTP_200_OK)
 async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = Header(...)):
     payload  = auth.verify_token(token)
     if not payload:
@@ -74,7 +73,7 @@ async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = He
     return request
 
 
-@router.put("/", status_code=status.HTTP_200_OK)
+@router.put("/food", status_code=status.HTTP_200_OK)
 async def update_request(request: schema.Request, db: Session = Depends(db.get_db), token: str = Header(...)):
     payload  = auth.verify_token(token)
     if not payload:

@@ -29,13 +29,20 @@ async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db
 async def login_user(user: schema.UserLogin, db: Session = Depends(db.get_db)):
     token = auth.get_user_token(user.email, user.password)
     db_user = db.query(model.User).filter(model.User.email == user.email).first()
+    db_user.is_active = True
+    db.commit()
     return {"token": token, "user": {"username": db_user.username, "email": db_user.email}}
 
 
 
-@router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout_user(token: str = Header(...)):
-    response = auth.logout_user(token)
+@router.post("/logout")
+async def logout_user(token: str = Header(...),db: Session = Depends(db.get_db)):
+    payload = auth.verify_token(token)
+    username = payload.get("preferred_username")
+    response = auth.logout_user(username)
+    db_user = db.query(model.User).filter(model.User.username == username).first()
+    db_user.is_active = False
+    db.commit()
     return response
 
 

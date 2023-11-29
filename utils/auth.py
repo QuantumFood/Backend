@@ -45,7 +45,7 @@ def verify_token(token):
         payload = jwt.decode(token, key=DECODE_KEY, audience=AUDIENCE, algorithms=[ALGORITHM])
         return payload
     except JWTError as e:
-          raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 def get_user_id(username):
@@ -116,18 +116,19 @@ def is_user_logged_in(username):
     return len(response.json()) > 0
 
 
-def logout_user(token):
-    data = {
-        'refresh_token': token
+def logout_user(username):
+    user_id = get_user_id(username)
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
     }
-    try:    
-        response =  requests.post(
-            f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/protocol/openid-connect/logout", data = data)
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail="Error logging out user")
-        return {"message": "User logged out successfully"}
-    except Exception as e:
-        return {"message": str(e)}
+    if is_user_logged_in(username) is False:
+        return {"message": "User is not logged in"}
+    response =  requests.post(
+        f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/logout", headers=headers)
+    if response.status_code != 204:
+        raise HTTPException(status_code=500, detail="Error logging out user")
+    return {"detail": "User logged out successfully"}
+    
 
 
 def delete_keycloak_user(username):
