@@ -129,3 +129,16 @@ def logout_user(token):
     except Exception as e:
         return {"message": str(e)}
 
+
+def delete_keycloak_user(username):
+    user_id = get_user_id(username)
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+    }
+    try:
+        response = requests.delete(
+            f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}", headers=headers)
+        if response.status_code != 204:
+                raise HTTPException(status_code=500, detail="Error deleting user")
+    except Exception as e:
+        return {"message": str(e)}

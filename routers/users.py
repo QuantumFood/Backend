@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.orm import Session
-from models import schema
+from models import schema,model
 from database import db
 from utils import auth
-from auth_services import register_db_user, register_keycloak_user
+from auth_services import delete_db_user, register_db_user, register_keycloak_user
 
 router = APIRouter(
     prefix="/auth",
@@ -38,3 +38,24 @@ async def logout_user(token: str = Header(...)):
     return response
 
 
+
+@router.delete("/users", status_code=status.HTTP_200_OK)
+async def delete_user(token: str = Header(...), db: Session = Depends(db.get_db)):
+    payload = auth.verify_token(token)
+    if not payload:
+        raise HTTPException(
+              status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")    
+    username = payload.get("preferred_username")
+    auth.delete_keycloak_user(username)
+    delete_db_user(username, db)
+    return {"message": "User deleted successfully"}
+
+
+@router.delete("/users/all",status_code=status.HTTP_200_OK)
+async def delete_all_users(db: Session = Depends(db.get_db)):
+    users = db.query(model.User).all()
+    for user in users:
+        auth.delete_keycloak_user(user.username)
+        delete_db_user(user.username, db)
+    return {"message": "All users deleted successfully"}
+    
