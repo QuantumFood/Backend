@@ -20,15 +20,16 @@ async def register_user(user: schema.UserCreate, db: Session = Depends(db.get_db
         register_db_user(user, db)
         #login user
         token = auth.get_user_token(user.email,user.password)
-        return token
+        return {"token": token, "user":{ "username": user.username, "email": user.email}}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error registering user,retry later")
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def login_user(user: schema.UserLogin):
+async def login_user(user: schema.UserLogin, db: Session = Depends(db.get_db)):
     token = auth.get_user_token(user.email, user.password)
-    return token
+    db_user = db.query(model.User).filter(model.User.email == user.email).first()
+    return {"token": token, "user": {"username": db_user.username, "email": db_user.email}}
 
 
 
