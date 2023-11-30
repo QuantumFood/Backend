@@ -121,8 +121,6 @@ def logout_user(username):
     headers = {
         'Authorization': f'Bearer {admin_token}',
     }
-    if is_user_logged_in(username) is False:
-        return {"message": "User is not logged in"}
     response =  requests.post(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/logout", headers=headers)
     if response.status_code != 204:

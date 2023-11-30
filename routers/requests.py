@@ -5,7 +5,7 @@ from database import db
 from models import model, schema
 from utils import auth
 import json
-import os 
+import os
 from dotenv import load_dotenv
 
 
@@ -75,8 +75,11 @@ async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = He
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     request = db.query(model.Request).filter(
-        model.Request.user_id == user.id).all()
-    return request
+        model.Request.user_id == user.id).first()
+    if request:
+        return request
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="You have no request")
 
 
 @router.put("/food", status_code=status.HTTP_200_OK)
