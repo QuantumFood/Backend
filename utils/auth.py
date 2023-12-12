@@ -75,7 +75,6 @@ def get_user_id(username):
 
 
 
-
 def create_user(user):
     admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
