@@ -5,6 +5,7 @@ from models import model, schema
 from utils import auth
 from dotenv import load_dotenv
 from datetime import datetime
+from utils.config import send_mail
 
 
 load_dotenv()
@@ -14,9 +15,6 @@ router = APIRouter(
     tags=["requests"],
 )
 
-
-# producer = KafkaProducer(bootstrap_servers=os.getenv('KAFKA_URL'),
-#                          value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
 
 @router.get("/all", status_code=status.HTTP_200_OK)
@@ -49,6 +47,8 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
     db.commit()
     db.refresh(new_request)
 
+    send_mail(user.email)
+       
     message = {
         "message": "Request created successfully",
         "data": {
@@ -57,9 +57,6 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
             "email": user.email
         }
     }
-    # producer.send('user-requests', message.get("data"))
-    # producer.flush()
-
     return message
 
 
