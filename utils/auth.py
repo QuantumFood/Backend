@@ -3,6 +3,7 @@ from jose import jwt,JWTError
 from dotenv import load_dotenv
 import requests
 import os
+from datetime import datetime, timedelta
 
 
 load_dotenv()
@@ -36,8 +37,16 @@ def get_user_token(email, password):
     return response.json()
    
 
-admin_token = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)[
-    "access_token"]
+admin_token = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)
+expire_date = datetime.now() + timedelta(seconds=admin_token.get('expires_in'))
+
+def refresh_admin_token(token):
+    if datetime.now() > expire_date:
+        response = get_user_token(KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD)
+        return response
+    return token
+    
+        
 
 DECODE_KEY= "-----BEGIN PUBLIC KEY-----\n" + PUBLIC_KEY + "\n-----END PUBLIC KEY-----"
 def verify_token(token):
@@ -49,8 +58,9 @@ def verify_token(token):
 
 
 def get_user_id(username):
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     params = {
         'username': username,
@@ -65,10 +75,10 @@ def get_user_id(username):
 
 
 
-
 def create_user(user):
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
         'Content-Type': 'application/json',
     }
     try:
@@ -80,8 +90,9 @@ def create_user(user):
 
 
 def username_exists_in_keycloak(username):
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     params = {
         'username': username,
@@ -91,8 +102,9 @@ def username_exists_in_keycloak(username):
     return len(response.json()) > 0
 
 def email_exists_in_keycloak(email):
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     params = {
         'email': email,
@@ -108,8 +120,9 @@ def is_user_logged_in(username):
     user_id = get_user_id(username)
     if user_id is None:
         return False
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     response = requests.get(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/sessions", headers=headers)
@@ -118,8 +131,9 @@ def is_user_logged_in(username):
 
 def logout_user(username):
     user_id = get_user_id(username)
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     response =  requests.post(
         f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/logout", headers=headers)
@@ -131,8 +145,9 @@ def logout_user(username):
 
 def delete_keycloak_user(username):
     user_id = get_user_id(username)
+    admin_access_token = refresh_admin_token(admin_token).get('access_token')
     headers = {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {admin_access_token}',
     }
     try:
         response = requests.delete(

@@ -1,12 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException, status, Header
 from sqlalchemy.orm import Session, joinedload
-from kafka import KafkaProducer
 from database import db
 from models import model, schema
 from utils import auth
-import json
-import os
 from dotenv import load_dotenv
+from datetime import datetime
+from utils.config import send_mail
 
 
 load_dotenv()
@@ -16,9 +15,6 @@ router = APIRouter(
     tags=["requests"],
 )
 
-
-producer = KafkaProducer(bootstrap_servers=os.getenv('KAFKA_URL'),
-                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
 
 @router.get("/all", status_code=status.HTTP_200_OK)
@@ -40,15 +36,19 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if db.query(model.Request).filter(model.Request.user_id == user.id).first():
+    food = db.query(model.Request).filter(model.Request.user_id == user.id).order_by(model.Request.created_at.desc()).first()
+    
+    if food and food.created_at.date() == datetime.now().date():
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User already has a request")
+            status_code=status.HTTP_409_CONFLICT, detail="User already has a request for today")
 
     new_request = model.Request(user_id=user.id, food=request.food)
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
 
+    send_mail(user.email)
+       
     message = {
         "message": "Request created successfully",
         "data": {
@@ -57,9 +57,6 @@ async def create_request(request: schema.Request, db: Session = Depends(db.get_d
             "email": user.email
         }
     }
-    producer.send('user-requests', message.get("data"))
-    producer.flush()
-
     return message
 
 
@@ -74,34 +71,12 @@ async def get_requests_by_user(db: Session = Depends(db.get_db), token: str = He
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    request = db.query(model.Request).filter(
-        model.Request.user_id == user.id).first()
+    request = db.query(model.Request).filter(model.Request.user_id == user.id).order_by(model.Request.created_at.desc()).first()
     if request:
         return request
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail="You have no request")
 
-
-@router.put("/food", status_code=status.HTTP_200_OK)
-async def update_request(request: schema.Request, db: Session = Depends(db.get_db), token: str = Header(...)):
-    payload = auth.verify_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    username = payload.get("preferred_username")
-    user = db.query(model.User).filter(model.User.username == username).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    db_request = db.query(model.Request).filter(
-        model.Request.user_id == user.id).first()
-    if not db_request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
-    db_request.food = request.food
-    db.commit()
-    db.refresh(db_request)
-    return {"message": "Request updated successfully", "data": {"food": db_request.food}}
 
 
 @router.delete("/all", status_code=status.HTTP_200_OK)
